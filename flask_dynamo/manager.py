@@ -57,9 +57,6 @@ class Dynamo(object):
         if not self.app.config['DYNAMO_TABLES']:
             raise ConfigurationError('You must specify at least one Dynamo table to use.')
 
-        if not (self.app.config['AWS_ACCESS_KEY_ID'] and self.app.config['AWS_SECRET_ACCESS_KEY']):
-            raise ConfigurationError('You must specify your AWS credentials.')
-
         if self.app.config['DYNAMO_ENABLE_LOCAL'] and not (self.app.config['DYNAMO_LOCAL_HOST'] and self.app.config['DYNAMO_LOCAL_PORT']):
             raise ConfigurationError('If you have enabled Dynamo local, you must specify the host and port.')
 
@@ -75,12 +72,16 @@ class Dynamo(object):
         if ctx is not None:
             if not hasattr(ctx, 'dynamo_connection'):
                 kwargs = {
-                    'aws_access_key_id': self.app.config['AWS_ACCESS_KEY_ID'],
-                    'aws_secret_access_key': self.app.config['AWS_SECRET_ACCESS_KEY'],
+                    'aws_access_key_id': self.app.config.get('AWS_ACCESS_KEY_ID'),
+                    'aws_secret_access_key': self.app.config.get('AWS_SECRET_ACCESS_KEY'),
                     'host': self.app.config['DYNAMO_LOCAL_HOST'] if self.app.config['DYNAMO_ENABLE_LOCAL'] else None,
                     'port': int(self.app.config['DYNAMO_LOCAL_PORT']) if self.app.config['DYNAMO_ENABLE_LOCAL'] else None,
                     'is_secure': False if self.app.config['DYNAMO_ENABLE_LOCAL'] else True,
                 }
+
+                if not kwargs['aws_access_key_id'] or not kwargs['aws_secret_access_key']:
+                    del kwargs['aws_access_key_id']
+                    del kwargs['aws_secret_access_key']
 
                 # If DynamoDB local is disabled, we'll remove these settings.
                 if not kwargs['host']:
